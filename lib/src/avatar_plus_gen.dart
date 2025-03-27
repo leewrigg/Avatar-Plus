@@ -1,8 +1,20 @@
 import 'dart:convert';
-import 'package:avatar_plus/src/avatar_plus_utils.dart';
+
+import 'package:avatar_plus/avatar_plus.dart';
 import 'package:crypto/crypto.dart';
 
 class AvatarPlusGen {
+  static const _svgStart =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 231 231">';
+  static const _svgEnd = '</svg>';
+
+  static const _env = 'env';
+  static const _clo = 'clo';
+  static const _head = 'head';
+  static const _mouth = 'mouth';
+  static const _eyes = 'eyes';
+  static const _top = 'top';
+
   // Private constructor with initialization logic
   AvatarPlusGen._internal();
 
@@ -20,10 +32,6 @@ class AvatarPlusGen {
   String generate(String string, {bool trBackground = false}) {
     string += '';
 
-    String svgStart =
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 231 231">';
-    String svgEnd = '</svg>';
-
     String hash = '';
     if (string.isEmpty) return hash;
 
@@ -36,23 +44,23 @@ class AvatarPlusGen {
 
     Map<dynamic, dynamic> p = {};
 
-    p['env'] = hash[0] + '' + hash[1];
-    p['env'] = ((47 / 100) * int.parse(p['env'])).round().toString() + '';
+    p[_env] = hash[0] + '' + hash[1];
+    p[_env] = ((47 / 100) * int.parse(p[_env])).round().toString() + '';
 
-    p['clo'] = hash[2] + '' + hash[3];
-    p['clo'] = ((47 / 100) * int.parse(p['clo'])).round().toString() + '';
+    p[_clo] = hash[2] + '' + hash[3];
+    p[_clo] = ((47 / 100) * int.parse(p[_clo])).round().toString() + '';
 
-    p['head'] = hash[4] + '' + hash[5];
-    p['head'] = ((47 / 100) * int.parse(p['head'])).round().toString() + '';
+    p[_head] = hash[4] + '' + hash[5];
+    p[_head] = ((47 / 100) * int.parse(p[_head])).round().toString() + '';
 
-    p['mouth'] = hash[6] + '' + hash[7];
-    p['mouth'] = ((47 / 100) * int.parse(p['mouth'])).round().toString() + '';
+    p[_mouth] = hash[6] + '' + hash[7];
+    p[_mouth] = ((47 / 100) * int.parse(p[_mouth])).round().toString() + '';
 
-    p['eyes'] = hash[8] + '' + hash[9];
-    p['eyes'] = ((47 / 100) * int.parse(p['eyes'])).round().toString() + '';
+    p[_eyes] = hash[8] + '' + hash[9];
+    p[_eyes] = ((47 / 100) * int.parse(p[_eyes])).round().toString() + '';
 
-    p['top'] = hash[10] + '' + hash[11];
-    p['top'] = ((47 / 100) * int.parse(p['top'])).round().toString() + '';
+    p[_top] = hash[10] + '' + hash[11];
+    p[_top] = ((47 / 100) * int.parse(p[_top])).round().toString() + '';
 
     for (var part in p.keys) {
       var nr = p[part];
@@ -82,16 +90,60 @@ class AvatarPlusGen {
       _final[part] = avatarPlusUtils.getFinal(part, partV, theme);
     }
 
-    if (trBackground) _final['env'] = '';
+    if (trBackground) _final[_env] = '';
 
-    return (svgStart +
+    return (_svgStart +
         // Background
-        _final['env'] +
-        _final['head'] +
-        _final['clo'] +
-        _final['top'] +
-        _final['eyes'] +
-        _final['mouth'] +
-        svgEnd);
+        _final[_env] +
+        _final[_head] +
+        _final[_clo] +
+        _final[_top] +
+        _final[_eyes] +
+        _final[_mouth] +
+        _svgEnd);
+  }
+
+  /// Generates an avatar using individual feature integers.
+  /// Each feature cycles between 0 and 47 using modulo.
+  String generateFromValues(AvatarPlusValues values) {
+    // Ensure all values are within the valid range (00-47)
+    String padWithTheme(int value) {
+      int modValue = value % 48; // Ensure the value is within 0-47
+      String theme;
+
+      if (modValue > 31) {
+        modValue -= 32;
+        theme = 'C';
+      } else if (modValue > 15) {
+        modValue -= 16;
+        theme = 'B';
+      } else {
+        theme = 'A';
+      }
+
+      return modValue.toString().padLeft(2, '0') + theme;
+    }
+
+    Map<String, String?> p = {
+      _env: values.env == null ? null : padWithTheme(values.env!),
+      _clo: values.clo == null ? null : padWithTheme(values.clo!),
+      _head: values.head == null ? null : padWithTheme(values.head!),
+      _mouth: values.mouth == null ? null : padWithTheme(values.mouth!),
+      _eyes: values.eyes == null ? null : padWithTheme(values.eyes!),
+      _top: values.top == null ? null : padWithTheme(values.top!),
+    };
+
+    Map<String, String> _final = {};
+    for (final part in p.keys) {
+      _final[part] = p[part] == null
+          ? ''
+          : avatarPlusUtils.getFinal(
+              part, p[part]!.substring(0, 2), p[part]!.substring(2, 3));
+    }
+
+    return '$_svgStart'
+        '${_final[_env]}${_final[_head]}${_final[_clo]}'
+        '${_final[_top]}${_final[_eyes]}${_final[_mouth]}'
+        '$_svgEnd';
   }
 }
